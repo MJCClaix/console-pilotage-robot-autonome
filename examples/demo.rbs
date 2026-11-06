@@ -1,0 +1,6 @@
+# Exemple de script de pilotage
+forward(150, 2.0)    # avance pendant 2 s
+sleep(0.5)
+rotate(100, 1.0)
+translate(-120, 1.5)
+forward(-150, 2.0)   # recule
