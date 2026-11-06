@@ -5,15 +5,14 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from robot_console.errors import SettingsError, describe_validation_error
+from robot_core.errors import SettingsError, describe_validation_error
+from robot_core.paths import CONFIG_DIR
 
 DEFAULT_HOST = "192.168.1.3"
 DEFAULT_PORT = 80
 DEFAULT_TIMEOUT = 3.0
 
-# Racine du projet : src/robot_console/settings.py -> parents[2].
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_SETTINGS_PATH = PROJECT_ROOT / "config" / "settings.json"
+DEFAULT_SETTINGS_PATH = CONFIG_DIR / "settings.json"
 
 
 class Settings(BaseModel):

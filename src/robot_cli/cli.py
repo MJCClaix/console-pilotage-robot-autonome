@@ -5,11 +5,11 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from robot_console.client import RobotClient
-from robot_console.errors import RobotConsoleError
-from robot_console.instructions import Axis, Instruction, parse_move
-from robot_console.script import SCRIPT_EXTENSION, load_script
-from robot_console.settings import load_settings, save_settings, update_settings
+from robot_core.client import RobotClient
+from robot_core.errors import RobotConsoleError
+from robot_core.instructions import Axis, Instruction, parse_move
+from robot_core.script import SCRIPT_EXTENSION, load_script
+from robot_core.settings import load_settings, save_settings, update_settings
 
 # Ordre d'exécution lorsque plusieurs options de `send` sont combinées.
 _SEND_ORDER = (Axis.FORWARD, Axis.TRANSLATION, Axis.ROTATION)

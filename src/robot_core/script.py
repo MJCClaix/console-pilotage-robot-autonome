@@ -11,8 +11,8 @@ Syntaxe, une instruction par ligne ; `#` démarre un commentaire :
 import re
 from pathlib import Path
 
-from robot_console.errors import InstructionError, ScriptError
-from robot_console.instructions import Axis, Instruction, parse_move, parse_sleep
+from robot_core.errors import InstructionError, ScriptError
+from robot_core.instructions import Axis, Instruction, parse_move, parse_sleep
 
 SCRIPT_EXTENSION = ".rbs"
 

@@ -4,7 +4,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from robot_console.errors import InstructionError, describe_validation_error
+from robot_core.errors import InstructionError, describe_validation_error
 
 # À vérifier côté contrôleur moteur : le récepteur WiFi accepte jusqu'à
 # +/-32767, mais l'intensité attendue par le robot serait de +/-255.

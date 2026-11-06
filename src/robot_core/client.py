@@ -2,14 +2,15 @@
 
 import contextlib
 import socket
+import threading
 import time
 from collections.abc import Callable, Iterable
 from types import TracebackType
 from typing import Self
 
-from robot_console.instructions import Instruction, Move, Sleep
-from robot_console.protocol import STOP_FRAME, encode_move
-from robot_console.settings import Settings
+from robot_core.instructions import Instruction, Move, Sleep
+from robot_core.protocol import STOP_FRAME, encode_move
+from robot_core.settings import Settings
 
 # Le récepteur ferme la connexion après 3 s sans données : on renvoie donc
 # la trame courante à intervalle régulier pendant toute la durée d'une instruction.
@@ -21,15 +22,14 @@ class RobotClient:
 
     À la sortie du contexte (y compris sur erreur ou Ctrl-C), une trame
     d'arrêt est envoyée pour ne jamais laisser le robot en mouvement.
+    Positionner `cancel` interrompt l'exécution en cours dans les ~instants qui suivent.
     """
 
     def __init__(
-        self,
-        settings: Settings,
-        sleep: Callable[[float], None] = time.sleep,
+        self, settings: Settings, cancel: threading.Event | None = None
     ) -> None:
         self._settings = settings
-        self._sleep = sleep
+        self._cancel = cancel if cancel is not None else threading.Event()
         self._socket: socket.socket | None = None
 
     def __enter__(self) -> Self:
@@ -52,9 +52,17 @@ class RobotClient:
         self._socket.close()
         self._socket = None
 
-    def run(self, instructions: Iterable[Instruction]) -> None:
-        """Exécute les instructions les unes après les autres."""
-        for instruction in instructions:
+    def run(
+        self,
+        instructions: Iterable[Instruction],
+        on_step: Callable[[int], None] | None = None,
+    ) -> None:
+        """Exécute les instructions une à une ; `on_step` reçoit le rang (à partir de 1)."""
+        for step, instruction in enumerate(instructions, start=1):
+            if self._cancel.is_set():
+                return
+            if on_step is not None:
+                on_step(step)
             self._execute(instruction)
 
     def _execute(self, instruction: Instruction) -> None:
@@ -65,10 +73,10 @@ class RobotClient:
                 self._hold(STOP_FRAME, duration)
 
     def _hold(self, frame: bytes, duration: float) -> None:
-        """Maintient une trame envoyée pendant `duration` secondes."""
+        """Maintient une trame envoyée pendant `duration` secondes (ou jusqu'à l'annulation)."""
         if self._socket is None:
             raise RuntimeError("client non connecté : utiliser `with RobotClient(...)`")
         deadline = time.monotonic() + duration
-        while (remaining := deadline - time.monotonic()) > 0:
+        while not self._cancel.is_set() and (remaining := deadline - time.monotonic()) > 0:
             self._socket.sendall(frame)
-            self._sleep(min(REFRESH_INTERVAL, remaining))
+            self._cancel.wait(min(REFRESH_INTERVAL, remaining))

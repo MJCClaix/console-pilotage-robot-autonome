@@ -6,7 +6,7 @@ dans l'ordre [avant/arrière][translation][rotation].
 
 import struct
 
-from robot_console.instructions import Axis
+from robot_core.instructions import Axis
 
 FRAME_FORMAT = ">iii"
 

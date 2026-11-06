@@ -1,5 +1,5 @@
-from robot_console.instructions import Axis
-from robot_console.protocol import STOP_FRAME, encode_frame, encode_move
+from robot_core.instructions import Axis
+from robot_core.protocol import STOP_FRAME, encode_frame, encode_move
 
 
 def test_frame_is_twelve_bytes_big_endian() -> None:

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Console robot</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">◈</div>
+      <div>
+        <h1>Console robot</h1>
+        <p class="target" id="target">—</p>
+      </div>
+    </div>
+
+    <div class="runstate" id="runstate" data-state="idle">
+      <span class="dot" aria-hidden="true"></span>
+      <div class="runtext">
+        <strong id="state-text">Au repos</strong>
+        <small id="state-detail">Aucune exécution en cours</small>
+      </div>
+      <div class="progress" aria-hidden="true"><div id="progress-bar"></div></div>
+      <button class="btn danger" id="stop-btn" title="Interrompre (Échap)">■ Arrêt</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <div class="column side">
+      <section class="card" aria-labelledby="manual-title">
+        <h2 id="manual-title">Commande manuelle</h2>
+        <p class="muted">Intensité de -255 à 255 · durée en secondes</p>
+        <div id="axes" class="axes"></div>
+      </section>
+
+      <section class="card" aria-labelledby="settings-title">
+        <h2 id="settings-title">Connexion</h2>
+        <form id="settings-form" class="form-grid" autocomplete="off">
+          <label>Adresse<input id="set-host" name="host" required placeholder="192.168.1.3"></label>
+          <label>Port<input id="set-port" name="port" type="number" min="1" max="65535" required></label>
+          <label>Délai (s)<input id="set-timeout" name="timeout" type="number" min="0.1" step="0.1" required></label>
+          <button class="btn primary" type="submit">Enregistrer</button>
+        </form>
+      </section>
+    </div>
+
+    <div class="column main">
+      <section class="card editor" aria-labelledby="editor-title">
+        <div class="card-head">
+          <h2 id="editor-title">Script</h2>
+          <div class="switch" id="mode-switch" role="group" aria-label="Mode d'édition" data-mode="text">
+            <span class="thumb" aria-hidden="true"></span>
+            <button type="button" data-mode="text" aria-pressed="true">Texte</button>
+            <button type="button" data-mode="list" aria-pressed="false">Liste</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <select id="script-select" aria-label="Scripts enregistrés"></select>
+          <input id="script-name" placeholder="nom-du-script" maxlength="64" aria-label="Nom du script" spellcheck="false">
+          <button class="btn" id="save-btn" type="button">💾 Enregistrer</button>
+          <button class="btn ghost" id="delete-btn" type="button" title="Supprimer le script enregistré">Supprimer</button>
+          <button class="btn primary" id="run-btn" type="button">▶ Exécuter</button>
+        </div>
+
+        <div class="pane" id="text-pane">
+          <pre class="gutter" id="gutter" aria-hidden="true">1</pre>
+          <textarea id="script-text" spellcheck="false" placeholder="forward(150, 2)&#10;rotate(100, 1.5)&#10;sleep(1)   # pause"></textarea>
+        </div>
+
+        <div class="pane" id="list-pane" hidden>
+          <div class="adder">
+            <div class="chips" id="type-chips" role="group" aria-label="Type d'instruction">
+              <button type="button" class="chip active" data-type="forward">Avancer</button>
+              <button type="button" class="chip" data-type="translate">Translation</button>
+              <button type="button" class="chip" data-type="rotate">Rotation</button>
+              <button type="button" class="chip" data-type="sleep">Pause</button>
+            </div>
+            <label class="inline" id="add-intensity-label">Intensité
+              <input id="add-intensity" type="number" min="-255" max="255" step="1" value="150">
+            </label>
+            <label class="inline">Durée (s)
+              <input id="add-duration" type="number" min="0" step="0.1" value="1">
+            </label>
+            <button class="btn primary" id="add-btn" type="button">＋ Ajouter</button>
+          </div>
+          <ol class="steps" id="steps"></ol>
+          <p class="empty" id="steps-empty">Aucune instruction. Choisis un type puis « Ajouter ».</p>
+        </div>
+
+        <p class="hint" id="hint">Une instruction par ligne · <code>forward</code> <code>translate</code> <code>rotate</code> (intensité, durée) · <code>sleep</code>(durée) · <code>#</code> commentaire</p>
+      </section>
+
+      <section class="card terminal" aria-labelledby="terminal-title">
+        <div class="card-head">
+          <h2 id="terminal-title">Terminal</h2>
+          <button class="btn ghost small" id="clear-btn" type="button">Effacer</button>
+        </div>
+        <div class="log" id="log" role="log" aria-live="polite"></div>
+        <form id="terminal-form" class="prompt" autocomplete="off">
+          <span aria-hidden="true">›</span>
+          <input id="terminal-input" placeholder="send --forward 150 2   ·   file scripts/demo.rbs   ·   settings   ·   -h" spellcheck="false" aria-label="Terminal">
+        </form>
+      </section>
+    </div>
+  </main>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

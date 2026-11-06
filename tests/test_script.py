@@ -1,8 +1,8 @@
 import pytest
 
-from robot_console.errors import ScriptError
-from robot_console.instructions import Axis, Move, Sleep
-from robot_console.script import parse_script
+from robot_core.errors import ScriptError
+from robot_core.instructions import Axis, Move, Sleep
+from robot_core.script import parse_script
 
 
 def test_parses_all_instructions_and_ignores_comments() -> None:

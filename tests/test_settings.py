@@ -2,10 +2,10 @@ from pathlib import Path
 
 import pytest
 
-from robot_console.errors import SettingsError
-from robot_console.settings import (
+from robot_core.errors import SettingsError
+from robot_core.paths import PROJECT_ROOT
+from robot_core.settings import (
     DEFAULT_SETTINGS_PATH,
-    PROJECT_ROOT,
     Settings,
     load_settings,
     save_settings,
