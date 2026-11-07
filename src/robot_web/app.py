@@ -1,8 +1,11 @@
 """Application Flask : API JSON + page unique de pilotage."""
 
 import argparse
+import platform
 import shlex
+import subprocess
 import threading
+import webbrowser
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -168,13 +171,42 @@ def create_app(
     return app
 
 
+def _open_browser(url: str) -> None:
+    """Ouvre ``url`` dans le navigateur par défaut, y compris depuis WSL.
+
+    Sous WSL, ``webbrowser`` passe par ``xdg-open``/``gio`` qui n'ont pas de
+    navigateur configuré : on demande alors à Windows d'ouvrir l'URL.
+    """
+    if "microsoft" in platform.uname().release.lower():
+        subprocess.run(
+            ["cmd.exe", "/c", "start", "", url],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return
+    webbrowser.open(url)
+
+
 def main(argv: Sequence[str] | None = None) -> None:
-    """Lance le serveur de développement, accessible uniquement depuis cette machine."""
+    """Lance le serveur de développement, accessible uniquement depuis cette machine.
+
+    La page est ouverte dans le navigateur par défaut, sauf avec ``--no-browser``.
+    """
     parser = argparse.ArgumentParser(
         prog="robot-console-web", description="Interface web de pilotage du robot."
     )
     parser.add_argument("--port", type=int, default=_DEFAULT_WEB_PORT)
+    parser.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="ne pas ouvrir automatiquement la page dans le navigateur",
+    )
     args = parser.parse_args(argv)
+    if not args.no_browser:
+        # Différé : le serveur n'est pas encore à l'écoute au moment de l'appel.
+        url = f"http://127.0.0.1:{args.port}/"
+        threading.Timer(1.0, _open_browser, args=(url,)).start()
     create_app().run(host="127.0.0.1", port=args.port, threaded=True)
 
 

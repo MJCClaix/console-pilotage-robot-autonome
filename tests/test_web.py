@@ -167,3 +167,73 @@ def test_terminal_runs_the_real_cli() -> None:
     bad = client.post("/api/terminal", json={"line": "settings --port 0"}).get_json()
     assert bad["exit_code"] == 1
     assert "port" in bad["output"]
+
+
+class _FakeUname:
+    """Imite le résultat de ``platform.uname()`` : seul ``release`` est utilisé."""
+
+    def __init__(self, release: str) -> None:
+        self.release = release
+
+
+def _stub_server(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, int]]:
+    """Remplace le serveur Flask pour inspecter l'hôte et le port utilisés par ``main``."""
+    runs: list[tuple[str, int]] = []
+    monkeypatch.setattr(
+        Flask, "run", lambda self, host, port, threaded: runs.append((host, port))
+    )
+    return runs
+
+
+def test_main_opens_browser_on_page_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    from robot_web import app as web_app
+
+    runs = _stub_server(monkeypatch)
+    scheduled: list[tuple[float, tuple[str]]] = []
+
+    class RecordingTimer:
+        def __init__(self, interval: float, function, args: tuple[str]) -> None:
+            scheduled.append((interval, args))
+
+        def start(self) -> None:
+            pass
+
+    monkeypatch.setattr(web_app.threading, "Timer", RecordingTimer)
+    web_app.main(["--port", "8080"])
+    assert scheduled == [(1.0, ("http://127.0.0.1:8080/",))]
+    assert runs == [("127.0.0.1", 8080)]
+
+
+def test_main_no_browser_flag_skips_browser(monkeypatch: pytest.MonkeyPatch) -> None:
+    from robot_web import app as web_app
+
+    runs = _stub_server(monkeypatch)
+    monkeypatch.setattr(
+        web_app.threading,
+        "Timer",
+        lambda *args, **kwargs: pytest.fail("le navigateur ne doit pas être lancé"),
+    )
+    web_app.main(["--no-browser"])
+    assert runs == [("127.0.0.1", 5000)]
+
+
+def test_open_browser_uses_windows_under_wsl(monkeypatch: pytest.MonkeyPatch) -> None:
+    from robot_web import app as web_app
+
+    commands: list[list[str]] = []
+    monkeypatch.setattr(web_app.platform, "uname", lambda: _FakeUname("5.15.0-microsoft-standard-WSL2"))
+    monkeypatch.setattr(web_app.subprocess, "run", lambda cmd, **kwargs: commands.append(cmd))
+    monkeypatch.setattr(web_app.webbrowser, "open", lambda url: pytest.fail("pas de webbrowser sous WSL"))
+    web_app._open_browser("http://127.0.0.1:5000/")
+    assert commands == [["cmd.exe", "/c", "start", "", "http://127.0.0.1:5000/"]]
+
+
+def test_open_browser_uses_webbrowser_elsewhere(monkeypatch: pytest.MonkeyPatch) -> None:
+    from robot_web import app as web_app
+
+    opened: list[str] = []
+    monkeypatch.setattr(web_app.platform, "uname", lambda: _FakeUname("6.8.0-generic"))
+    monkeypatch.setattr(web_app.subprocess, "run", lambda *a, **k: pytest.fail("pas de cmd.exe hors WSL"))
+    monkeypatch.setattr(web_app.webbrowser, "open", opened.append)
+    web_app._open_browser("http://127.0.0.1:5000/")
+    assert opened == ["http://127.0.0.1:5000/"]

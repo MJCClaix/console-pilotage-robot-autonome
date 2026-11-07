@@ -11,10 +11,21 @@ import threading
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
+from pathlib import Path
 
 from robot_core.paths import PROJECT_ROOT
 
-DEFAULT_CLI_COMMAND = (sys.executable, str(PROJECT_ROOT / "run_cli.py"))
+CLI_EXECUTABLE_NAME = "robot-cli.exe" if sys.platform == "win32" else "robot-cli"
+
+
+def _default_cli_command() -> tuple[str, ...]:
+    """Commande qui lance la CLI : l'exécutable `robot-cli` si l'application est gelée."""
+    if getattr(sys, "frozen", False):
+        return (str(Path(sys.executable).with_name(CLI_EXECUTABLE_NAME)),)
+    return (sys.executable, str(PROJECT_ROOT / "run_cli.py"))
+
+
+DEFAULT_CLI_COMMAND = _default_cli_command()
 
 # Seules ces sous-commandes de la CLI pilotent le robot : elles doivent réserver le
 # robot (une seule exécution à la fois). Les autres (settings, -h...) sont instantanées.
