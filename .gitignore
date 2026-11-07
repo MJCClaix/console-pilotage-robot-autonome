@@ -218,3 +218,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Environnement Windows (build des .exe depuis PowerShell)
+.venv-win/
+
+# Installeur Windows généré (ne pas versionner)
+installer/Output/

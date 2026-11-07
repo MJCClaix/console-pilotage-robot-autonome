@@ -1,9 +1,11 @@
 """Application Flask : API JSON + page unique de pilotage."""
 
 import argparse
+import os
 import platform
 import shlex
 import subprocess
+import sys
 import threading
 import webbrowser
 from collections.abc import Sequence
@@ -183,6 +185,8 @@ def _open_browser(url: str) -> None:
             check=False,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
+            # interface-pilotage.exe est fenêtré : évite une fenêtre console éphémère.
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
         return
     webbrowser.open(url)
@@ -203,6 +207,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         help="ne pas ouvrir automatiquement la page dans le navigateur",
     )
     args = parser.parse_args(argv)
+    # Exécutable fenêtré (sans console) : les flux standard sont None, on les neutralise.
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w", encoding="utf-8")
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w", encoding="utf-8")
     if not args.no_browser:
         # Différé : le serveur n'est pas encore à l'écoute au moment de l'appel.
         url = f"http://127.0.0.1:{args.port}/"

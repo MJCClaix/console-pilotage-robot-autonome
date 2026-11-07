@@ -15,11 +15,11 @@ from pathlib import Path
 
 from robot_core.paths import PROJECT_ROOT
 
-CLI_EXECUTABLE_NAME = "robot-cli.exe" if sys.platform == "win32" else "robot-cli"
+CLI_EXECUTABLE_NAME = "console-pilotage.exe" if sys.platform == "win32" else "console-pilotage"
 
 
 def _default_cli_command() -> tuple[str, ...]:
-    """Commande qui lance la CLI : l'exécutable `robot-cli` si l'application est gelée."""
+    """Commande qui lance la CLI : l'exécutable `console-pilotage` si l'application est gelée."""
     if getattr(sys, "frozen", False):
         return (str(Path(sys.executable).with_name(CLI_EXECUTABLE_NAME)),)
     return (sys.executable, str(PROJECT_ROOT / "run_cli.py"))
@@ -30,6 +30,10 @@ DEFAULT_CLI_COMMAND = _default_cli_command()
 # Seules ces sous-commandes de la CLI pilotent le robot : elles doivent réserver le
 # robot (une seule exécution à la fois). Les autres (settings, -h...) sont instantanées.
 DRIVING_COMMANDS = frozenset({"send", "file"})
+
+# Sous Windows, interface-pilotage.exe (sans console) ferait ouvrir une fenêtre à chaque commande
+# de la CLI ; CREATE_NO_WINDOW l'en empêche. Hors Windows, la valeur est nulle.
+_NO_WINDOW_FLAGS = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 QUICK_COMMAND_TIMEOUT = 10.0
 _POLL_INTERVAL = 0.1
@@ -66,6 +70,7 @@ def run_cli(
         text=True,
         encoding="utf-8",
         errors="replace",
+        creationflags=_NO_WINDOW_FLAGS,
     ) as process:
         while True:
             try:
