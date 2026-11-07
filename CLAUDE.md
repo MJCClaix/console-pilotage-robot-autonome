@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - Installer : `uv sync` (venv `.venv`, Python 3.14)
 - Tests : `.venv/bin/python -m pytest` ; un seul test : `.venv/bin/python -m pytest tests/test_script.py::test_errors_report_line_number`
-- Application CLI : `.venv/bin/python run_cli.py {send,file,settings}` (`send --forward I D --translate I D --rotate I D`, `file script.rbs`, `settings --host --port --timeout`)
+- Application CLI : `.venv/bin/python run_cli.py {send,file,settings}` (`send --forward I D --translate I D --rotate I D`, `file script.rbs`, `settings --host --port --timeout`) ; sans argument : console interactive rbs (`>>>`)
 - Application web : `.venv/bin/python run_web.py [--port 5000]` (écoute uniquement sur 127.0.0.1)
 
 Il n'y a que ces deux lanceurs (`run_cli.py`, `run_web.py`, à la racine) : pas de scripts `robot-*` ni de `python -m`.
@@ -24,7 +24,8 @@ Trois paquets : une bibliothèque partagée et deux applications **indépendante
 - `paths.py` : racine du projet, `config/`, `scripts/`. `errors.py` : exceptions.
 
 ### `robot_cli/` — application CLI
-- `cli.py` : analyse des arguments (`send`, `file`, `settings`) et exécution synchrone. `main()` est appelé par `run_cli.py`.
+- `cli.py` : analyse des arguments (`send`, `file`, `settings`) et exécution synchrone. `main()` est appelé par `run_cli.py` ; sans argument il lance la console rbs.
+- `repl.py` : console interactive rbs (`run_console`), une instruction `.rbs` par ligne (`parse_line`), `help()`, `exit()`/Ctrl-D ; connexion ouverte à chaque instruction (le récepteur coupe après 3 s d'inactivité) ; erreurs affichées sans quitter, Ctrl-C interrompt le mouvement.
 
 ### `robot_web/` — application web (Flask)
 - `app.py` : `create_app()`, API JSON (`/api/status|stop|send|script/*|scripts|settings|terminal`). Refuse les hôtes non locaux (403) et les requêtes POST/PUT/DELETE non-JSON (415) : le robot est physique, ne pas affaiblir ces garde-fous. `main()` est appelé par `run_web.py`.

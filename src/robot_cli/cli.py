@@ -5,6 +5,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from robot_cli.repl import run_console
 from robot_core.client import RobotClient
 from robot_core.errors import RobotConsoleError
 from robot_core.instructions import Axis, Instruction, parse_move
@@ -24,7 +25,9 @@ _AXIS_HELP = {
 def build_parser() -> argparse.ArgumentParser:
     """Construit l'analyseur d'arguments (sous-commandes send, file, settings)."""
     parser = argparse.ArgumentParser(
-        prog="robot-console", description="Pilotage d'un robot autonome par WiFi."
+        prog="robot-console",
+        description="Pilotage d'un robot autonome par WiFi.",
+        epilog="Sans argument, lance une console interactive rbs (forward(150, 2), sleep(1)...).",
     )
     commands = parser.add_subparsers(dest="command", required=True)
 
@@ -54,9 +57,15 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Point d'entrée ; renvoie le code de sortie du processus."""
+    """Point d'entrée ; renvoie le code de sortie du processus.
+
+    Sans aucun argument, lance la console interactive rbs.
+    """
+    arguments = sys.argv[1:] if argv is None else list(argv)
+    if not arguments:
+        return run_console(_execute)
     parser = build_parser()
-    args = parser.parse_args(argv)
+    args = parser.parse_args(arguments)
     try:
         match args.command:
             case "send":
