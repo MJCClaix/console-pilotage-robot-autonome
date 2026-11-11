@@ -44,6 +44,9 @@
     name: $("#script-name"),
     save: $("#save-btn"),
     remove: $("#delete-btn"),
+    importBtn: $("#import-btn"),
+    exportBtn: $("#export-btn"),
+    importFile: $("#import-file"),
     run: $("#run-btn"),
     textPane: $("#text-pane"),
     gutter: $("#gutter"),
@@ -366,6 +369,37 @@
       el.name.value = "";
       await refreshScriptList();
       toast(`Script « ${name} » supprimé`, "success");
+    })
+  );
+
+  // ------------------------------------------------------------ Import / export .rbs
+  el.exportBtn.addEventListener("click", () => {
+    const name = el.name.value.trim() || "script";
+    const url = URL.createObjectURL(new Blob([currentContent()], { type: "text/plain;charset=utf-8" }));
+    const link = Object.assign(document.createElement("a"), { href: url, download: `${name}.rbs` });
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  el.importBtn.addEventListener("click", () => el.importFile.click());
+
+  el.importFile.addEventListener("change", () =>
+    guarded(async () => {
+      const file = el.importFile.files[0];
+      el.importFile.value = "";
+      if (!file) return;
+      const content = await file.text();
+      // Vérifie la syntaxe avant de remplacer l'éditeur.
+      await api("/api/script/parse", { method: "POST", body: { content } });
+      const base = file.name.replace(/\.rbs$/i, "");
+      el.text.value = content;
+      el.name.value = /^[A-Za-z0-9_-]{1,64}$/.test(base) ? base : "";
+      el.select.value = "";
+      updateGutter();
+      if (state.mode === "list") await parseIntoSteps(content);
+      toast(`Fichier « ${file.name} » importé (pensez à enregistrer)`, "success");
     })
   );
 

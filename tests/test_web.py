@@ -49,6 +49,13 @@ def client(app: Flask) -> FlaskClient:
 
 def test_index_and_static_are_served(client: FlaskClient) -> None:
     assert b"Console robot" in client.get("/").data
+
+
+def test_index_offers_rbs_import_and_export(client: FlaskClient) -> None:
+    page = client.get("/").data
+    assert b'id="import-btn"' in page
+    assert b'id="export-btn"' in page
+    assert b'accept=".rbs,text/plain"' in page
     assert client.get("/static/app.js").status_code == 200
     assert client.get("/static/app.css").status_code == 200
 

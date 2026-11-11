@@ -8,7 +8,7 @@
 ; Installation par utilisateur, sans droits administrateur, dans %LOCALAPPDATA%\Programs.
 
 #define AppName "Console de pilotage du robot"
-#define AppVersion "0.1.1"
+#define AppVersion "0.1.2"
 
 [Setup]
 ChangesEnvironment=yes
