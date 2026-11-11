@@ -42,4 +42,4 @@ Après `build_exes.py`, depuis PowerShell à la racine du projet :
 & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\robot-console.iss
 ```
 
-Crée `installer\Output\robot-console-setup.exe` (non versionné). L'installation se fait par utilisateur, sans droits administrateur, dans `%LOCALAPPDATA%\Programs\RobotConsole`. L'option « Lancer la CLI du robot au démarrage de Windows » ajoute un raccourci dans le dossier Démarrage de l'utilisateur ; la CLI s'ouvre alors dans une fenêtre console (sans argument, c'est la console interactive).
+Crée `installer\Output\robot-console-setup.exe` (non versionné). L'installation se fait par utilisateur, sans droits administrateur, dans `%LOCALAPPDATA%\Programs\RobotConsole`. Le dossier est ajouté au `PATH` de l'utilisateur : `console-pilotage` est donc disponible dans tout nouveau terminal, sans lancer le programme depuis le menu Démarrer.

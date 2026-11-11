@@ -8,7 +8,7 @@
 ; Installation par utilisateur, sans droits administrateur, dans %LOCALAPPDATA%\Programs.
 
 #define AppName "Console de pilotage du robot"
-#define AppVersion "0.1.0"
+#define AppVersion "0.1.1"
 
 [Setup]
 ChangesEnvironment=yes
@@ -32,11 +32,11 @@ UninstallDisplayName={#AppName}
 Name: "french"; MessagesFile: "compiler:Languages\French.isl"
 
 [Tasks]
-Name: "autostart"; Description: "Lancer la Console de pilotage au démarrage de Windows"; GroupDescription: "Options :"
 Name: "desktopicon"; Description: "Créer un raccourci de l'interface de pilotage sur le Bureau"; GroupDescription: "Options :"
 
 [InstallDelete]
-; Anciens noms (versions précédentes de l'installeur)
+; Anciens noms et ancien démarrage automatique (versions précédentes de l'installeur)
+Type: files; Name: "{userstartup}\Console de pilotage.lnk"
 Type: files; Name: "{app}\robot-cli.exe"
 Type: files; Name: "{app}\robot-web.exe"
 
@@ -47,7 +47,6 @@ Source: "..\dist\interface-pilotage.exe"; DestDir: "{app}"; Flags: ignoreversion
 [Icons]
 Name: "{group}\Interface de pilotage"; Filename: "{app}\interface-pilotage.exe"; WorkingDir: "{app}"
 Name: "{group}\Console de pilotage"; Filename: "{app}\console-pilotage.exe"; WorkingDir: "{app}"
-Name: "{userstartup}\Console de pilotage"; Filename: "{app}\console-pilotage.exe"; WorkingDir: "{app}"; Tasks: autostart
 Name: "{userdesktop}\Interface de pilotage"; Filename: "{app}\interface-pilotage.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
