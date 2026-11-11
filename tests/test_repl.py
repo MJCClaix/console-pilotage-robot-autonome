@@ -119,3 +119,20 @@ def test_console_drives_a_robot_end_to_end(robot: FakeRobot) -> None:
     run_console(execute, scripted("forward(50, 0.05)", "exit()"))
     assert wait_until(lambda: robot.frames()[-1:] == [STOP_FRAME])
     assert robot.frames()[0] == encode_move(Axis.FORWARD, 50)
+
+
+
+def test_console_command_runs_action_instead_of_robot() -> None:
+    calls: list[str] = []
+    executed: list[Sequence[Instruction]] = []
+    lines = ScriptedInput(["web()", "exit()"])
+
+    code = run_console(
+        executed.append,
+        read_line=lines,
+        commands={"web()": lambda: calls.append("web")},
+    )
+
+    assert code == 0
+    assert calls == ["web"]
+    assert executed == []

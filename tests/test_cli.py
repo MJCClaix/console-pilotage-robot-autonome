@@ -2,7 +2,9 @@ from pathlib import Path
 
 import pytest
 
+from robot_cli import cli
 from robot_cli.cli import main
+from robot_core.errors import RobotConsoleError
 
 
 def test_send_requires_an_option(capsys: pytest.CaptureFixture[str]) -> None:
@@ -40,3 +42,29 @@ def test_invalid_script_reports_line(tmp_path: Path, capsys: pytest.CaptureFixtu
 def test_invalid_setting_is_rejected(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["settings", "--port", "0"]) == 1
     assert "port" in capsys.readouterr().err
+
+
+def test_web_subcommand_starts_interface_on_given_port(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    started: list[int] = []
+
+    def fake_start(port: int) -> str:
+        started.append(port)
+        return f"http://127.0.0.1:{port}/"
+
+    monkeypatch.setattr(cli, "start_web", fake_start)
+    assert cli.main(["web", "--port", "5001"]) == 0
+    assert started == [5001]
+    assert "http://127.0.0.1:5001/" in capsys.readouterr().out
+
+
+def test_web_subcommand_reports_startup_error(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def failing_start(port: int) -> str:
+        raise RobotConsoleError("l'interface web tourne déjà")
+
+    monkeypatch.setattr(cli, "start_web", failing_start)
+    assert cli.main(["web"]) == 1
+    assert "tourne déjà" in capsys.readouterr().err

@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from robot_cli.repl import run_console
+from robot_cli.web import DEFAULT_WEB_PORT, start_web
 from robot_core.client import RobotClient
 from robot_core.errors import RobotConsoleError
 from robot_core.instructions import Axis, Instruction, parse_move
@@ -53,6 +54,13 @@ def build_parser() -> argparse.ArgumentParser:
     settings.add_argument(
         "--timeout", type=float, help="délai de connexion, en secondes"
     )
+
+    web = commands.add_parser(
+        "web", help="démarrer l'interface web et l'ouvrir dans le navigateur"
+    )
+    web.add_argument(
+        "--port", type=int, default=DEFAULT_WEB_PORT, help="port du serveur web (défaut : 5000)"
+    )
     return parser
 
 
@@ -63,7 +71,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     """
     arguments = sys.argv[1:] if argv is None else list(argv)
     if not arguments:
-        return run_console(_execute)
+        return run_console(_execute, commands={"web": _open_web, "web()": _open_web})
     parser = build_parser()
     args = parser.parse_args(arguments)
     try:
@@ -74,6 +82,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 _run_file(args)
             case "settings":
                 _run_settings(args)
+            case "web":
+                _open_web(args.port)
     except RobotConsoleError as error:
         print(f"erreur : {error}", file=sys.stderr)
         return 1
@@ -111,6 +121,10 @@ def _run_settings(args: argparse.Namespace) -> None:
     print(f"host    : {updated.host}")
     print(f"port    : {updated.port}")
     print(f"timeout : {updated.timeout}")
+
+
+def _open_web(port: int = DEFAULT_WEB_PORT) -> None:
+    print(f"interface web lancée : {start_web(port)}")
 
 
 def _execute(instructions: list[Instruction]) -> None:

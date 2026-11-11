@@ -2,7 +2,7 @@
 
 import contextlib
 import sys
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 from robot_core.errors import RobotConsoleError
 from robot_core.instructions import MAX_INTENSITY, Instruction
@@ -22,6 +22,7 @@ Instructions (intensité de -{MAX_INTENSITY} à {MAX_INTENSITY}, durée en secon
   rotate(intensité, durée)      rotation sur place
   sleep(durée)                  pause
 Console : help(), exit() ou Ctrl-D pour quitter, Ctrl-C pour interrompre un mouvement.
+  web()                         lancer l'interface web et l'ouvrir dans le navigateur
 Un # démarre un commentaire."""
 
 _EXIT_COMMANDS = frozenset({"exit", "quit", "exit()", "quit()"})
@@ -31,8 +32,13 @@ _HELP_COMMANDS = frozenset({"help", "help()"})
 def run_console(
     execute: Callable[[Sequence[Instruction]], None],
     read_line: Callable[[str], str] = input,
+    commands: Mapping[str, Callable[[], None]] | None = None,
 ) -> int:
-    """Boucle de lecture : exécute chaque ligne saisie ; renvoie le code de sortie."""
+    """Boucle de lecture : exécute chaque ligne saisie ; renvoie le code de sortie.
+
+    `commands` associe des commandes de console (ex. `web()`) à une action sans argument.
+    """
+    commands = commands or {}
     _enable_line_editing()
     print(BANNER)
     while True:
@@ -51,7 +57,18 @@ def run_console(
         if command in _HELP_COMMANDS:
             print(HELP_TEXT)
             continue
+        if command in commands:
+            _run_command(commands[command])
+            continue
         _run_line(line, execute)
+
+
+def _run_command(action: Callable[[], None]) -> None:
+    """Exécute une commande de console ; ses erreurs sont affichées sans quitter la console."""
+    try:
+        action()
+    except (RobotConsoleError, OSError) as error:
+        print(f"erreur : {error}", file=sys.stderr)
 
 
 def _run_line(line: str, execute: Callable[[Sequence[Instruction]], None]) -> None:
