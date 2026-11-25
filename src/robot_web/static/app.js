@@ -123,20 +123,26 @@
         </div>
         <div class="axis-send">
           <label>Durée (s)<input type="number" min="0" step="0.1" value="1"></label>
+          <label title="Nombre d'envois de la commande au début, pour ne pas la perdre">Envois<input type="number" min="1" max="10" step="1" value="1"></label>
           <button class="btn primary" type="button">Envoyer</button>
         </div>`;
       wrap.querySelector("strong").textContent = axis.title;
       wrap.querySelector("small").textContent = axis.hint;
 
       const [slider, intensity] = wrap.querySelectorAll(".axis-row input");
-      const duration = wrap.querySelector(".axis-send input");
+      const [duration, repeat] = wrap.querySelectorAll(".axis-send input");
       slider.addEventListener("input", () => (intensity.value = slider.value));
       intensity.addEventListener("input", () => (slider.value = intensity.value));
       wrap.querySelector("button").addEventListener("click", () =>
         guarded(async () => {
           await api("/api/send", {
             method: "POST",
-            body: { axis: axis.kind, intensity: Number(intensity.value), duration: Number(duration.value) },
+            body: {
+              axis: axis.kind,
+              intensity: Number(intensity.value),
+              duration: Number(duration.value),
+              repeat: Number(repeat.value),
+            },
           });
           refreshStatus();
         })

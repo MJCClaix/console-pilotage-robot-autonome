@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - Installer : `uv sync` (venv `.venv`, Python 3.14)
 - Tests : `.venv/bin/python -m pytest` ; un seul test : `.venv/bin/python -m pytest tests/test_script.py::test_errors_report_line_number`
-- Application CLI : `.venv/bin/python run_cli.py {send,file,settings}` (`send --forward I D --translate I D --rotate I D`, `file script.rbs`, `settings --host --port --timeout`) ; sans argument : console interactive rbs (`>>>`)
+- Application CLI : `.venv/bin/python run_cli.py {send,file,settings}` (`send --forward I D --translate I D --rotate I D [--repeat N]`, `file script.rbs`, `settings --host --port --timeout`) ; sans argument : console interactive rbs (`>>>`)
 - Application web : `.venv/bin/python run_web.py [--port 5000]` (écoute uniquement sur 127.0.0.1)
 
 Il n'y a que ces deux lanceurs (`run_cli.py`, `run_web.py`, à la racine) : pas de scripts `robot-*` ni de `python -m`.
@@ -18,7 +18,7 @@ Trois paquets : une bibliothèque partagée et deux applications **indépendante
 ### `robot_core/` — bibliothèque partagée
 - `instructions.py` : modèles pydantic `Move` / `Sleep` (frozen), `Axis` en `StrEnum`, validation (intensité ±255 à vérifier côté robot).
 - `protocol.py` : trame de 12 octets = 3 entiers 32 bits signés big-endian `[avant/arrière][translation][rotation]` (récepteur ESP8266, TCP, défaut 192.168.1.3:80).
-- `client.py` : `RobotClient` ; renvoie la trame toutes les 0,5 s (le récepteur coupe après 3 s sans données) et envoie une trame d'arrêt en sortie. Interruptible via un `threading.Event` (`cancel`).
+- `client.py` : `RobotClient` ; une commande est envoyée `repeat` fois au début (défaut 1, max 10, espacées de 0,05 s), puis plus rien pendant sa durée, puis une trame d'arrêt. Pas de renvoi périodique : le récepteur coupe après 3 s sans donnée, donc **une commande de plus de ~3 s ne peut pas être arrêtée par ce client**. Interruptible via un `threading.Event` (`cancel`).
 - `script.py` : langage `.rbs` (`forward/translate/rotate(intensité, durée)`, `sleep(durée)`, `#` commentaires).
 - `settings.py` : modèle pydantic `Settings`, persisté dans `config/settings.json` à la racine du projet.
 - `paths.py` : racine du projet, `config/`, `scripts/`. `errors.py` : exceptions.

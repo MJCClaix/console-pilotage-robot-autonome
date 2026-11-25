@@ -123,7 +123,7 @@ input[type="number"] { font-family: var(--mono); }
 .axis input[type="range"] {
   width: 100%; accent-color: var(--accent); padding: 0; background: none; border: none; height: 22px;
 }
-.axis-send { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-top: 10px; align-items: end; }
+.axis-send { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; margin-top: 10px; align-items: end; }
 .axis-send label { display: flex; flex-direction: column; gap: 5px; font-size: .78rem; color: var(--muted); }
 
 /* ---------- Éditeur de script ---------- */

@@ -3,7 +3,6 @@
 import contextlib
 import socket
 import threading
-import time
 from collections.abc import Callable, Iterable
 from types import TracebackType
 from typing import Self
@@ -12,17 +11,20 @@ from robot_core.instructions import Instruction, Move, Sleep
 from robot_core.protocol import STOP_FRAME, encode_move
 from robot_core.settings import Settings
 
-# Le récepteur ferme la connexion après 3 s sans données : on renvoie donc
-# la trame courante à intervalle régulier pendant toute la durée d'une instruction.
-REFRESH_INTERVAL = 0.5
+# Écart entre deux envois successifs d'une même commande (répétitions au début).
+REPEAT_GAP = 0.05
 
 
 class RobotClient:
     """Connexion au robot, à utiliser comme gestionnaire de contexte.
 
-    À la sortie du contexte (y compris sur erreur ou Ctrl-C), une trame
-    d'arrêt est envoyée pour ne jamais laisser le robot en mouvement.
-    Positionner `cancel` interrompt l'exécution en cours dans les ~instants qui suivent.
+    Une commande est envoyée `repeat` fois au début, puis rien pendant sa durée.
+    Le robot s'arrête à la fin de la durée grâce à une trame d'arrêt. Le récepteur
+    coupe la connexion après 3 s sans donnée : une commande de plus de 3 s ne peut donc
+    pas être arrêtée à temps par ce client (voir CLAUDE.md).
+
+    À la sortie du contexte (y compris sur erreur ou Ctrl-C), une trame d'arrêt est
+    envoyée. Positionner `cancel` interrompt l'exécution en cours.
     """
 
     def __init__(
@@ -67,16 +69,20 @@ class RobotClient:
 
     def _execute(self, instruction: Instruction) -> None:
         match instruction:
-            case Move(axis=axis, intensity=intensity, duration=duration):
-                self._hold(encode_move(axis, intensity), duration)
+            case Move(axis=axis, intensity=intensity, duration=duration, repeat=repeat):
+                self._send_burst(encode_move(axis, intensity), repeat)
+                self._cancel.wait(duration)
+                # Arrêt explicite à la fin de la durée : sans lui, le robot garde la dernière trame.
+                self._send_burst(STOP_FRAME, repeat)
             case Sleep(duration=duration):
-                self._hold(STOP_FRAME, duration)
+                self._send_burst(STOP_FRAME, 1)
+                self._cancel.wait(duration)
 
-    def _hold(self, frame: bytes, duration: float) -> None:
-        """Maintient une trame envoyée pendant `duration` secondes (ou jusqu'à l'annulation)."""
+    def _send_burst(self, frame: bytes, count: int) -> None:
+        """Envoie `frame` `count` fois, espacées de `REPEAT_GAP`."""
         if self._socket is None:
             raise RuntimeError("client non connecté : utiliser `with RobotClient(...)`")
-        deadline = time.monotonic() + duration
-        while not self._cancel.is_set() and (remaining := deadline - time.monotonic()) > 0:
+        for index in range(count):
+            if index:
+                self._cancel.wait(REPEAT_GAP)
             self._socket.sendall(frame)
-            self._cancel.wait(min(REFRESH_INTERVAL, remaining))

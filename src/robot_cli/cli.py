@@ -9,7 +9,7 @@ from robot_cli.repl import run_console
 from robot_cli.web import DEFAULT_WEB_PORT, start_web
 from robot_core.client import RobotClient
 from robot_core.errors import RobotConsoleError
-from robot_core.instructions import Axis, Instruction, parse_move
+from robot_core.instructions import MAX_REPEAT, Axis, Instruction, parse_move
 from robot_core.script import SCRIPT_EXTENSION, load_script
 from robot_core.settings import load_settings, save_settings, update_settings
 
@@ -40,6 +40,13 @@ def build_parser() -> argparse.ArgumentParser:
             metavar=("INTENSITE", "DUREE"),
             help=f"{_AXIS_HELP[axis]} ; durée en secondes",
         )
+    send.add_argument(
+        "--repeat",
+        type=int,
+        default=1,
+        metavar="N",
+        help=f"envoyer la commande N fois au début (1 à {MAX_REPEAT}, défaut 1)",
+    )
 
     file = commands.add_parser(
         "file", help=f"exécuter un script d'instructions ({SCRIPT_EXTENSION})"
@@ -101,7 +108,7 @@ def _run_send(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None
     for axis in _SEND_ORDER:
         raw = getattr(args, axis)
         if raw is not None:
-            instructions.append(parse_move(axis, *raw))
+            instructions.append(parse_move(axis, *raw, repeat=args.repeat))
     if not instructions:
         parser.error("send : indiquer au moins une option parmi --forward, --translate, --rotate")
     _execute(instructions)

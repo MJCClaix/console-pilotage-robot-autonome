@@ -10,6 +10,9 @@ from robot_core.errors import InstructionError, describe_validation_error
 # +/-32767, mais l'intensité attendue par le robot serait de +/-255.
 MAX_INTENSITY = 255
 
+# Nombre maximal d'envois d'une même commande au début d'un mouvement.
+MAX_REPEAT = 10
+
 
 class Axis(StrEnum):
     """Axes de déplacement du robot (la valeur est le nom utilisé en CLI et en script)."""
@@ -20,13 +23,18 @@ class Axis(StrEnum):
 
 
 class Move(BaseModel):
-    """Déplacement sur un axe, à une intensité donnée, pendant une durée (secondes)."""
+    """Déplacement sur un axe, à une intensité donnée, pendant une durée (secondes).
+
+    `repeat` est le nombre d'envois de la commande au début, pour limiter le risque
+    qu'elle soit perdue. Par défaut, la commande n'est envoyée qu'une fois.
+    """
 
     model_config = ConfigDict(frozen=True)
 
     axis: Axis
     intensity: int = Field(ge=-MAX_INTENSITY, le=MAX_INTENSITY)
     duration: float = Field(ge=0, allow_inf_nan=False)
+    repeat: int = Field(default=1, ge=1, le=MAX_REPEAT)
 
 
 class Sleep(BaseModel):
@@ -40,13 +48,16 @@ class Sleep(BaseModel):
 Instruction = Move | Sleep
 
 
-def parse_move(axis: Axis, intensity_text: str, duration_text: str) -> Move:
+def parse_move(
+    axis: Axis, intensity_text: str, duration_text: str, repeat: int = 1
+) -> Move:
     """Construit un `Move` à partir de textes (arguments CLI ou script)."""
     try:
         return Move(
             axis=axis,
             intensity=_to_int(intensity_text, "intensité"),
             duration=_to_float(duration_text, "durée"),
+            repeat=repeat,
         )
     except ValidationError as error:
         raise InstructionError(describe_validation_error(error)) from error

@@ -88,7 +88,7 @@ def test_send_validates_payload(client: FlaskClient, payload: dict[str, object])
 def test_script_run_and_parse_errors(client: FlaskClient) -> None:
     response = client.post("/api/script/parse", json={"content": "forward(1, 1)\nsleep(2)"})
     assert response.get_json()["instructions"] == [
-        {"type": "move", "axis": "forward", "intensity": 1, "duration": 1.0},
+        {"type": "move", "axis": "forward", "intensity": 1, "duration": 1.0, "repeat": 1},
         {"type": "sleep", "duration": 2.0},
     ]
     bad = client.post("/api/script/run", json={"content": "forward(1, 1)\nnope()"})
