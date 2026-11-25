@@ -123,8 +123,10 @@ input[type="number"] { font-family: var(--mono); }
 .axis input[type="range"] {
   width: 100%; accent-color: var(--accent); padding: 0; background: none; border: none; height: 22px;
 }
-.axis-send { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; margin-top: 10px; align-items: end; }
-.axis-send label { display: flex; flex-direction: column; gap: 5px; font-size: .78rem; color: var(--muted); }
+.axis-send { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; margin-top: 10px; align-items: end; }
+.axis-send label { display: flex; flex-direction: column; gap: 5px; font-size: .78rem; color: var(--muted); min-width: 0; }
+.axis-send input { width: 100%; min-width: 0; }
+.axis-send .btn { padding: 9px 12px; }
 
 /* ---------- Éditeur de script ---------- */
 .toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }

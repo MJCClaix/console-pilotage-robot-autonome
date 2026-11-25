@@ -5,7 +5,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from robot_cli.repl import run_console
+from robot_cli.repl import ConsoleSession, run_console
 from robot_cli.web import DEFAULT_WEB_PORT, start_web
 from robot_core.client import RobotClient
 from robot_core.errors import RobotConsoleError
@@ -78,7 +78,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     """
     arguments = sys.argv[1:] if argv is None else list(argv)
     if not arguments:
-        return run_console(_execute, commands={"web": _open_web, "web()": _open_web})
+        with ConsoleSession(load_settings()) as session:
+            return run_console(session, commands={"web": _open_web, "web()": _open_web})
     parser = build_parser()
     args = parser.parse_args(arguments)
     try:

@@ -4,9 +4,14 @@ import contextlib
 import sys
 from collections.abc import Callable, Mapping, Sequence
 
+from types import TracebackType
+from typing import Self
+
+from robot_core.client import RobotClient
 from robot_core.errors import RobotConsoleError
 from robot_core.instructions import MAX_INTENSITY, Instruction
 from robot_core.script import parse_line
+from robot_core.settings import Settings
 
 PROMPT = ">>> "
 
@@ -24,6 +29,38 @@ Instructions (intensité de -{MAX_INTENSITY} à {MAX_INTENSITY}, durée en secon
 Console : help(), exit() ou Ctrl-D pour quitter, Ctrl-C pour interrompre un mouvement.
   web()                         lancer l'interface web et l'ouvrir dans le navigateur
 Un # démarre un commentaire."""
+
+class ConsoleSession:
+    """Connexion unique gardée ouverte pendant toute la console.
+
+    Elle est rouverte si le récepteur l'a fermée (inactivité de 3 s) et refermée après
+    une erreur ou un Ctrl-C, ce qui envoie une trame d'arrêt au robot.
+    """
+
+    def __init__(self, settings: Settings) -> None:
+        self._client = RobotClient(settings)
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        self._client.close()
+
+    def __call__(self, instructions: Sequence[Instruction]) -> None:
+        if not self._client.is_alive():
+            self._client.close()
+        self._client.open()
+        try:
+            self._client.run(instructions)
+        except BaseException:
+            self._client.close()
+            raise
+
 
 _EXIT_COMMANDS = frozenset({"exit", "quit", "exit()", "quit()"})
 _HELP_COMMANDS = frozenset({"help", "help()"})

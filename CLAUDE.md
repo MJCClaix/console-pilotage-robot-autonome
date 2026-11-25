@@ -25,7 +25,7 @@ Trois paquets : une bibliothèque partagée et deux applications **indépendante
 
 ### `robot_cli/` — application CLI
 - `cli.py` : analyse des arguments (`send`, `file`, `settings`) et exécution synchrone. `main()` est appelé par `run_cli.py` ; sans argument il lance la console rbs.
-- `repl.py` : console interactive rbs (`run_console`), une instruction `.rbs` par ligne (`parse_line`), `help()`, `exit()`/Ctrl-D ; connexion ouverte à chaque instruction (le récepteur coupe après 3 s d'inactivité) ; erreurs affichées sans quitter, Ctrl-C interrompt le mouvement.
+- `repl.py` : console interactive rbs (`run_console`), une instruction `.rbs` par ligne (`parse_line`), `help()`, `exit()`/Ctrl-D ; `ConsoleSession` garde une seule connexion pour toute la console (rouverte si le récepteur l'a coupée après 3 s d'inactivité, ou après une erreur) ; erreurs affichées sans quitter, Ctrl-C interrompt le mouvement.
 
 ### `robot_web/` — application web (Flask)
 - `app.py` : `create_app()`, API JSON (`/api/status|stop|send|script/*|scripts|settings|terminal`). Refuse les hôtes non locaux (403) et les requêtes POST/PUT/DELETE non-JSON (415) : le robot est physique, ne pas affaiblir ces garde-fous. `main()` est appelé par `run_web.py`.

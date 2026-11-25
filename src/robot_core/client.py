@@ -1,6 +1,7 @@
 """Client TCP exécutant des instructions sur le robot."""
 
 import contextlib
+import select
 import socket
 import threading
 from collections.abc import Callable, Iterable
@@ -35,10 +36,7 @@ class RobotClient:
         self._socket: socket.socket | None = None
 
     def __enter__(self) -> Self:
-        self._socket = socket.create_connection(
-            (self._settings.host, self._settings.port),
-            timeout=self._settings.timeout,
-        )
+        self.open()
         return self
 
     def __exit__(
@@ -47,12 +45,46 @@ class RobotClient:
         exc: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
+        self.close()
+
+    @property
+    def is_open(self) -> bool:
+        """Vrai si une connexion est ouverte (sans vérifier qu'elle est encore vivante)."""
+        return self._socket is not None
+
+    def open(self) -> None:
+        """Ouvre la connexion ; sans effet si elle est déjà ouverte."""
+        if self._socket is not None:
+            return
+        self._socket = socket.create_connection(
+            (self._settings.host, self._settings.port),
+            timeout=self._settings.timeout,
+        )
+
+    def close(self) -> None:
+        """Envoie une trame d'arrêt puis ferme la connexion ; sans effet si elle est fermée."""
         if self._socket is None:
             return
         with contextlib.suppress(OSError):
             self._socket.sendall(STOP_FRAME)
         self._socket.close()
         self._socket = None
+
+    def is_alive(self) -> bool:
+        """Vrai si la connexion est ouverte et que le récepteur ne l'a pas fermée.
+
+        Le récepteur ferme la connexion après 3 s d'inactivité : le socket devient alors
+        lisible avec une fin de flux (`recv` renvoie b""), ce qu'on détecte ici sans envoyer de donnée.
+        """
+        if self._socket is None:
+            return False
+        readable, _, _ = select.select([self._socket], [], [], 0)
+        if not readable:
+            return True
+        try:
+            return self._socket.recv(1, socket.MSG_PEEK) != b""
+        except OSError:
+            return False
 
     def run(
         self,

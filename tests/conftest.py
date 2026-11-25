@@ -14,6 +14,7 @@ class FakeRobot:
 
     def __init__(self) -> None:
         self.received = bytearray()
+        self.connections = 0  # nombre de connexions reçues
         self._server = socket.create_server(("127.0.0.1", 0))
         self._server.settimeout(0.1)
         self._stopped = threading.Event()
@@ -35,6 +36,7 @@ class FakeRobot:
         while not self._stopped.is_set():
             try:
                 connection, _ = self._server.accept()
+                self.connections += 1
             except TimeoutError:
                 continue
             except OSError:
