@@ -31,7 +31,7 @@ Trois paquets : une bibliothèque partagée et deux applications **indépendante
 - `app.py` : `create_app()`, API JSON (`/api/status|stop|send|script/*|scripts|settings|terminal`). Refuse les hôtes non locaux (403) et les requêtes POST/PUT/DELETE non-JSON (415) : le robot est physique, ne pas affaiblir ces garde-fous. `main()` est appelé par `run_web.py`.
 - `controller.py` : `RobotController`, une seule exécution à la fois (`BusyError` sinon) : en thread (`run`) ou réservée par l'appelant (`exclusive`) ; `stop()`, état `RunStatus`.
 - `script_store.py` : scripts enregistrés dans `scripts/*.rbs` (noms restreints à `[A-Za-z0-9_-]`).
-- `terminal.py` : terminal de la page. Lance le vrai `run_cli.py` en sous-processus (sortie renvoyée telle quelle) ; aucune connaissance de la grammaire de la CLI, sauf `DRIVING_COMMANDS = {send, file}` qui réservent le robot via `controller.exclusive()`. L'arrêt envoie SIGINT (la CLI envoie alors la trame d'arrêt), SIGKILL en dernier recours.
+- `terminal.py` : terminal de la page. `send`/`file` (`DRIVING_COMMANDS`) s'exécutent **dans le processus web** via la fonction injectée `driving_runner` (fournie par `run_web.py` avec `robot_cli.cli.run_in_process`, pour que `robot_web` n'importe pas `robot_cli`), réservés par `controller.exclusive()`, arrêtés par l'événement `cancel`. Les autres commandes (`settings`, `-h`) restent dans un sous-processus `run_cli.py`.
 - `templates/index.html`, `static/app.css`, `static/app.js` : page unique, sans dépendance front.
 
 ## Conventions

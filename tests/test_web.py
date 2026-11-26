@@ -140,6 +140,11 @@ def test_terminal_reports_cli_failure_and_bad_quotes(client: FlaskClient) -> Non
     assert client.post("/api/terminal", json={"line": "  "}).get_json() == {"output": "", "exit_code": 0}
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="voie sous-processus : SIGINT non supporté sous Windows (voir TODO.md) ; "
+    "le chemin réel est testé dans test_inprocess.py",
+)
 def test_terminal_driving_command_is_refused_while_busy_and_can_be_stopped(
     client: FlaskClient,
 ) -> None:

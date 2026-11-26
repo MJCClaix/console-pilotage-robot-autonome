@@ -2,12 +2,7 @@
 
 ## Bugs connus
 
-- **Arrêt impossible sous Windows pour les commandes lancées depuis le terminal web.**
-  `src/robot_web/terminal.py` interrompt `send` et `file` avec `send_signal(SIGINT)`,
-  signal non supporté sous Windows. Le bouton Arrêt ne stoppe donc pas le robot dans ce cas.
-  Le test `test_terminal_driving_command_is_refused_while_busy_and_can_be_stopped` échoue sous Windows.
-  Piste : exécuter `send` et `file` dans le processus de l'interface web avec le contrôleur
-  (`controller.run` / événement d'annulation), et déplacer la conversion `send` → instructions dans `robot_core`.
+- **Arrêt des commandes `settings`/`-h` du terminal web** : elles restent dans un sous-processus. Sans effet sur le robot, à traiter seulement si elles deviennent longues.
 
 - **Commandes de plus de ~3 s non arrêtables tant que le firmware de l'ESP coupe la connexion.**
   Le récepteur ferme la connexion après 3 s sans donnée. Le firmware doit être modifié

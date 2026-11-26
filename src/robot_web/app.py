@@ -8,7 +8,7 @@ import subprocess
 import sys
 import threading
 import webbrowser
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -40,14 +40,24 @@ from robot_web.terminal import (
 _LOCAL_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 _DEFAULT_WEB_PORT = 5000
 
+# Exécute une commande qui pilote le robot dans le processus courant : reçoit les
+# arguments et l'événement d'annulation, renvoie (texte affiché, code de sortie).
+# Fourni par le point d'entrée (run_web.py), pour que robot_web n'importe pas robot_cli.
+DrivingRunner = Callable[[Sequence[str], threading.Event], tuple[str, int]]
+
 
 def create_app(
     controller: RobotController | None = None,
     store: ScriptStore | None = None,
     settings_path: Path = DEFAULT_SETTINGS_PATH,
     cli_command: Sequence[str] = DEFAULT_CLI_COMMAND,
+    driving_runner: DrivingRunner | None = None,
 ) -> Flask:
-    """Crée l'application ; les dépendances sont injectables pour les tests."""
+    """Crée l'application ; les dépendances sont injectables pour les tests.
+
+    Sans `driving_runner`, les commandes `send` et `file` du terminal lancent la CLI
+    dans un sous-processus (l'arrêt n'y fonctionne pas sous Windows).
+    """
     app = Flask(__name__)
     controller = controller if controller is not None else RobotController()
     store = store if store is not None else ScriptStore()
@@ -141,6 +151,9 @@ def create_app(
             # Commande qui pilote le robot : refusée si une exécution est en cours,
             # et interrompue par `stop()` (équivalent d'un Ctrl-C).
             with controller.exclusive("terminal") as cancel:
+                if driving_runner is not None:
+                    output, exit_code = driving_runner(args, cancel)
+                    return jsonify(output=output, exit_code=exit_code)
                 result = run_cli(cli_command, args, cancel)
         else:
             result = run_cli(
@@ -192,7 +205,10 @@ def _open_browser(url: str) -> None:
     webbrowser.open(url)
 
 
-def main(argv: Sequence[str] | None = None) -> None:
+def main(
+    argv: Sequence[str] | None = None,
+    driving_runner: DrivingRunner | None = None,
+) -> None:
     """Lance le serveur de développement, accessible uniquement depuis cette machine.
 
     La page est ouverte dans le navigateur par défaut, sauf avec ``--no-browser``.
@@ -216,7 +232,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         # Différé : le serveur n'est pas encore à l'écoute au moment de l'appel.
         url = f"http://127.0.0.1:{args.port}/"
         threading.Timer(1.0, _open_browser, args=(url,)).start()
-    create_app().run(host="127.0.0.1", port=args.port, threaded=True)
+    create_app(driving_runner=driving_runner).run(host="127.0.0.1", port=args.port, threaded=True)
 
 
 def _json_body() -> dict[str, Any]:
