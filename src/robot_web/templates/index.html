@@ -87,6 +87,9 @@
             <label class="inline">Durée (s)
               <input id="add-duration" type="number" min="0" step="0.1" value="1">
             </label>
+            <label class="inline" id="add-repeat-label" title="Nombre d'envois de la commande au début, pour ne pas la perdre">Envois
+              <input id="add-repeat" type="number" min="1" max="10" step="1" value="1">
+            </label>
             <button class="btn primary" id="add-btn" type="button">＋ Ajouter</button>
           </div>
           <ol class="steps" id="steps"></ol>

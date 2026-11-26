@@ -18,8 +18,8 @@ Trois paquets : une bibliothèque partagée et deux applications **indépendante
 ### `robot_core/` — bibliothèque partagée
 - `instructions.py` : modèles pydantic `Move` / `Sleep` (frozen), `Axis` en `StrEnum`, validation (intensité ±255 à vérifier côté robot).
 - `protocol.py` : trame de 12 octets = 3 entiers 32 bits signés big-endian `[avant/arrière][translation][rotation]` (récepteur ESP8266, TCP, défaut 192.168.1.3:80).
-- `client.py` : `RobotClient` ; une commande est envoyée `repeat` fois au début (défaut 1, max 10, espacées de 0,05 s), puis plus rien pendant sa durée, puis une trame d'arrêt. Pas de renvoi périodique : le récepteur coupe après 3 s sans donnée, donc **une commande de plus de ~3 s ne peut pas être arrêtée par ce client**. Interruptible via un `threading.Event` (`cancel`).
-- `script.py` : langage `.rbs` (`forward/translate/rotate(intensité, durée)`, `sleep(durée)`, `#` commentaires).
+- `client.py` : `RobotClient` ; une commande est envoyée `repeat` fois au début (défaut 1, max 10, espacées de 0,05 s), puis plus rien pendant sa durée, puis une trame d'arrêt (sauf si le mouvement est suivi d'un autre mouvement : pas de trame nulle entre les deux). Pas de renvoi périodique : le récepteur coupe après 3 s sans donnée, donc **une commande de plus de ~3 s ne peut pas être arrêtée par ce client**. Interruptible via un `threading.Event` (`cancel`).
+- `script.py` : langage `.rbs` (`forward/translate/rotate(intensité, durée[, envois])`, `sleep(durée)`, `#` commentaires).
 - `settings.py` : modèle pydantic `Settings`, persisté dans `config/settings.json` à la racine du projet.
 - `paths.py` : racine du projet, `config/`, `scripts/`. `errors.py` : exceptions.
 

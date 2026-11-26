@@ -57,6 +57,8 @@
     addIntensityLabel: $("#add-intensity-label"),
     addIntensity: $("#add-intensity"),
     addDuration: $("#add-duration"),
+    addRepeatLabel: $("#add-repeat-label"),
+    addRepeat: $("#add-repeat"),
     add: $("#add-btn"),
     steps: $("#steps"),
     stepsEmpty: $("#steps-empty"),
@@ -178,13 +180,16 @@
   });
 
   // ------------------------------------------------------------ Éditeur : liste
-  const stepToLine = (step) =>
-    step.kind === "sleep" ? `sleep(${num(step.duration)})` : `${step.kind}(${step.intensity}, ${num(step.duration)})`;
+  const stepToLine = (step) => {
+    if (step.kind === "sleep") return `sleep(${num(step.duration)})`;
+    const repeat = step.repeat > 1 ? `, ${step.repeat}` : "";
+    return `${step.kind}(${step.intensity}, ${num(step.duration)}${repeat})`;
+  };
 
   const fromServer = (item) =>
     item.type === "sleep"
       ? { kind: "sleep", duration: item.duration }
-      : { kind: item.axis, intensity: item.intensity, duration: item.duration };
+      : { kind: item.axis, intensity: item.intensity, duration: item.duration, repeat: item.repeat ?? 1 };
 
   function renderSteps() {
     el.steps.replaceChildren();
@@ -203,7 +208,9 @@
       name.textContent = STEP_NAMES[step.kind](step);
       const detail = document.createElement("small");
       detail.textContent =
-        step.kind === "sleep" ? `${num(step.duration)} s` : `${step.intensity > 0 ? "+" : ""}${step.intensity} · ${num(step.duration)} s`;
+        step.kind === "sleep"
+          ? `${num(step.duration)} s`
+          : `${step.intensity > 0 ? "+" : ""}${step.intensity} · ${num(step.duration)} s${step.repeat > 1 ? ` · ×${step.repeat}` : ""}`;
       name.append(detail);
 
       const code = document.createElement("span");
@@ -263,6 +270,7 @@
     state.chip = chip.dataset.type;
     el.chips.querySelectorAll(".chip").forEach((node) => node.classList.toggle("active", node === chip));
     el.addIntensityLabel.hidden = state.chip === "sleep";
+    el.addRepeatLabel.hidden = state.chip === "sleep";
   });
 
   el.add.addEventListener("click", () => {
@@ -275,7 +283,11 @@
       if (!Number.isInteger(intensity) || Math.abs(intensity) > 255) {
         return toast("Intensité invalide (entier de -255 à 255)", "error");
       }
-      state.steps.push({ kind: state.chip, intensity, duration });
+      const repeat = Number(el.addRepeat.value);
+      if (!Number.isInteger(repeat) || repeat < 1 || repeat > 10) {
+        return toast("Envois invalide (entier de 1 à 10)", "error");
+      }
+      state.steps.push({ kind: state.chip, intensity, duration, repeat });
     }
     renderSteps();
     el.steps.scrollTop = el.steps.scrollHeight;

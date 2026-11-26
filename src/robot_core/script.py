@@ -5,6 +5,7 @@ Syntaxe, une instruction par ligne ; `#` démarre un commentaire :
     forward(200, 2.0)     # avancer (négatif pour reculer)
     translate(-150, 1)
     rotate(100, 0.5)
+    forward(150, 2, 3)    # troisième argument facultatif : nombre d'envois au début (1 à 10)
     sleep(1.5)
 """
 
@@ -34,8 +35,12 @@ def parse_line(line: str) -> Instruction | None:
     args = [arg.strip() for arg in match["args"].split(",")] if match["args"].strip() else []
 
     if name in _MOVE_NAMES:
-        _expect_arguments(name, args, 2)
-        return parse_move(_MOVE_NAMES[name], args[0], args[1])
+        if len(args) not in (2, 3):
+            raise InstructionError(
+                f"{name}() attend 2 ou 3 argument(s), {len(args)} reçu(s)"
+            )
+        repeat = _to_repeat(args[2]) if len(args) == 3 else 1
+        return parse_move(_MOVE_NAMES[name], args[0], args[1], repeat=repeat)
     if name == "sleep":
         _expect_arguments(name, args, 1)
         return parse_sleep(args[0])
@@ -62,6 +67,13 @@ def load_script(path: Path) -> list[Instruction]:
     except OSError as error:
         raise ScriptError(f"lecture impossible ({path}) : {error}") from error
     return parse_script(text)
+
+
+def _to_repeat(text: str) -> int:
+    try:
+        return int(text)
+    except ValueError:
+        raise InstructionError(f"nombre d'envois invalide : {text!r} (entier attendu)") from None
 
 
 def _expect_arguments(name: str, args: list[str], expected: int) -> None:

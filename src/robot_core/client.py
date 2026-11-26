@@ -34,6 +34,8 @@ class RobotClient:
         self._settings = settings
         self._cancel = cancel if cancel is not None else threading.Event()
         self._socket: socket.socket | None = None
+        self._robot_moving = False  # vrai tant qu'une trame de mouvement n'a pas été arrêtée
+        self._pending_repeat = 1
 
     def __enter__(self) -> Self:
         self.open()
@@ -91,21 +93,37 @@ class RobotClient:
         instructions: Iterable[Instruction],
         on_step: Callable[[int], None] | None = None,
     ) -> None:
-        """Exécute les instructions une à une ; `on_step` reçoit le rang (à partir de 1)."""
-        for step, instruction in enumerate(instructions, start=1):
-            if self._cancel.is_set():
-                return
-            if on_step is not None:
-                on_step(step)
-            self._execute(instruction)
+        """Exécute les instructions une à une ; `on_step` reçoit le rang (à partir de 1).
 
-    def _execute(self, instruction: Instruction) -> None:
+        Deux déplacements enchaînés ne sont pas séparés par une trame d'arrêt : le second
+        remplace le premier. Un arrêt est envoyé à la fin de la série, ou à l'interruption.
+        """
+        items = list(instructions)
+        try:
+            for step, instruction in enumerate(items, start=1):
+                if self._cancel.is_set():
+                    return
+                if on_step is not None:
+                    on_step(step)
+                followed_by_move = step < len(items) and isinstance(items[step], Move)
+                self._execute(instruction, followed_by_move)
+        finally:
+            if self._robot_moving:
+                self._robot_moving = False
+                with contextlib.suppress(OSError):
+                    self._send_burst(STOP_FRAME, self._pending_repeat)
+
+    def _execute(self, instruction: Instruction, followed_by_move: bool) -> None:
         match instruction:
             case Move(axis=axis, intensity=intensity, duration=duration, repeat=repeat):
                 self._send_burst(encode_move(axis, intensity), repeat)
                 self._cancel.wait(duration)
-                # Arrêt explicite à la fin de la durée : sans lui, le robot garde la dernière trame.
-                self._send_burst(STOP_FRAME, repeat)
+                self._pending_repeat = repeat
+                if followed_by_move:
+                    self._robot_moving = True
+                else:
+                    # Arrêt à la fin de la durée : sans lui, le robot garde la dernière trame.
+                    self._send_burst(STOP_FRAME, repeat)
             case Sleep(duration=duration):
                 self._send_burst(STOP_FRAME, 1)
                 self._cancel.wait(duration)

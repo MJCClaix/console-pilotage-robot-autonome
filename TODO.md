@@ -15,5 +15,4 @@
 
 ## Fonctionnalités à prévoir
 
-- Paramètre `repeat` absent de la syntaxe `.rbs` (seul `send --repeat` et le champ « Envois » existent).
 - Définir la plage d'intensité réelle attendue par le contrôleur moteur (±255 supposé).
